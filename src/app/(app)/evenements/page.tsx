@@ -3,8 +3,8 @@ import { requireMember, getCurrentFY, loadLedger, canWrite } from '@/lib/auth';
 import { accMap, getAccounts, getBudget, getEvents } from '@/lib/data';
 import { eventResults } from '@/lib/reports';
 import { PageHeader, Notice, Amount, Empty } from '@/components/ui';
-import { ActionForm, Submit } from '@/components/Forms';
-import { saveEvent } from '@/app/actions';
+import { ActionButton, ActionForm, Submit } from '@/components/Forms';
+import { saveEvent, deleteEvent } from '@/app/actions';
 import { fmtDate } from '@/lib/format';
 
 export default async function Evenements() {
@@ -19,9 +19,9 @@ export default async function Evenements() {
       <PageHeader title="Événements" subtitle="Chaque événement a son budget et son résultat net (analytique). Sélectionne-le à la saisie d'une dépense ou d'une recette." />
       <div className="card overflow-x-auto">
         <table className="w-full">
-          <thead><tr className="border-b border-slate-100"><th className="th">Date</th><th className="th">Événement</th><th className="th num">Dépenses prévues</th><th className="th num">Recettes prévues</th><th className="th num">Dépenses réelles</th><th className="th num">Recettes réelles</th><th className="th num">Net réel</th></tr></thead>
+          <thead><tr className="border-b border-slate-100"><th className="th">Date</th><th className="th">Événement</th><th className="th num">Dépenses prévues</th><th className="th num">Recettes prévues</th><th className="th num">Dépenses réelles</th><th className="th num">Recettes réelles</th><th className="th num">Net réel</th>{write && <th className="th"></th>}</tr></thead>
           <tbody>
-            {results.length === 0 && <tr><td colSpan={7}><Empty>Aucun événement.</Empty></td></tr>}
+            {results.length === 0 && <tr><td colSpan={8}><Empty>Aucun événement.</Empty></td></tr>}
             {results.map((r) => (
               <tr key={r.event.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60">
                 <td className="td whitespace-nowrap">{r.event.event_date ? fmtDate(r.event.event_date) : 'À définir'}</td>
@@ -31,6 +31,7 @@ export default async function Evenements() {
                 <td className="td num">{r.actual.charges ? <Amount value={r.actual.charges} /> : '-'}</td>
                 <td className="td num">{r.actual.produits ? <Amount value={r.actual.produits} /> : '-'}</td>
                 <td className="td num"><Amount value={r.actual.net} signed /></td>
+                {write && <td className="td whitespace-nowrap text-right"><Link href={`/evenements/${r.event.id}`} className="btn-ghost btn-sm mr-1">Modifier</Link><ActionButton action={deleteEvent} label="Supprimer" confirm="Supprimer cet événement et son budget ?" hidden={{ id: r.event.id }} /></td>}
               </tr>
             ))}
           </tbody>

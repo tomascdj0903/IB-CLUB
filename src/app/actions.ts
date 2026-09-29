@@ -181,6 +181,31 @@ export async function saveEvent(_: ActionState, fd: FormData): Promise<ActionSta
   return { ok: true, message: 'Événement ajouté.' };
 }
 
+export async function updateEvent(_: ActionState, fd: FormData): Promise<ActionState> {
+  const supabase = await createClient();
+  const code = str(fd, 'code').toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+  const name = str(fd, 'name');
+  if (!code || !name) return fail('Code et nom obligatoires.');
+  const { data, error } = await supabase.from('events').update({
+    code, name, event_date: orNull(str(fd, 'event_date')), hosted_by_bde: fd.get('bde') === 'on', notes: orNull(str(fd, 'notes')),
+  }).eq('id', str(fd, 'id')).select('id');
+  if (error) return fail(error.code === '23505' ? 'Ce code existe déjà dans cet exercice.' : error.message);
+  if (!data || data.length === 0) return fail('Modification refusée (droits insuffisants).');
+  refresh();
+  return { ok: true, message: 'Événement modifié.' };
+}
+
+export async function deleteEvent(_: ActionState, fd: FormData): Promise<ActionState> {
+  const supabase = await createClient();
+  const id = str(fd, 'id');
+  const { count } = await supabase.from('entry_lines').select('id', { count: 'exact', head: true }).eq('event_id', id);
+  if ((count ?? 0) > 0) return fail('Impossible de supprimer : des écritures sont rattachées à cet événement.');
+  const { error } = await supabase.from('events').delete().eq('id', id);
+  if (error) return fail(error.message);
+  refresh();
+  return { ok: true };
+}
+
 export async function saveBudgetLine(_: ActionState, fd: FormData): Promise<ActionState> {
   const supabase = await createClient();
   const amount = parseAmount(fd.get('amount'));
